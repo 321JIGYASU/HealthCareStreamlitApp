@@ -2,6 +2,7 @@ import streamlit as st
 import wave
 import os
 
+
 from faster_whisper import WhisperModel
 from deep_translator import GoogleTranslator
 
@@ -34,6 +35,8 @@ def process_audio(audio_path):
     ).translate(english_text)
 
     return detected_lang, native_text, english_text, native_script
+
+
 st.title("Patient voice complaint")
 
 audio_file = st.audio_input("Record patient's complaint")
@@ -67,7 +70,9 @@ if os.path.exists("patient_audio.wav"):
         st.subheader("English Translation")
         st.write(english_text)
         st.subheader("Back to Native (Cleaned Version)")
-        st.write(native_script)
+        st.write(native_script) 
+    
+       
     
 
     # Delete button
