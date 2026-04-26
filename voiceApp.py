@@ -6,7 +6,7 @@ import os
 from faster_whisper import WhisperModel
 from deep_translator import GoogleTranslator
 
-model = WhisperModel("medium", device="cpu", compute_type="int8_float32")
+model = WhisperModel("small", device="cpu", compute_type="int8_float32")
 
 def process_audio(audio_path):
 
