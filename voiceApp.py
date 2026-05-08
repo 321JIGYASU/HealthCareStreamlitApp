@@ -30,7 +30,7 @@ def process_audio(audio_path):
         condition_on_previous_text=False
     )
 
-    english_text = " ".join([s.text for s in s`egments_en])
+    english_text = " ".join([s.text for s in segments_en])
 
     # Step 3: optional back-translation (for UI clarity)
     native_script = GoogleTranslator(
