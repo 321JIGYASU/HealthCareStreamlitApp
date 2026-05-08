@@ -6,7 +6,11 @@ import os
 from faster_whisper import WhisperModel
 from deep_translator import GoogleTranslator
 
-model = WhisperModel("small", device="cpu", compute_type="int8_float32")
+@st.cache_resource
+def load_model():
+    return WhisperModel("small", device="cpu", compute_type="int8")
+
+model = load_model()
 
 def process_audio(audio_path):
 
@@ -26,7 +30,7 @@ def process_audio(audio_path):
         condition_on_previous_text=False
     )
 
-    english_text = " ".join([s.text for s in segments_en])
+    english_text = " ".join([s.text for s in s`egments_en])
 
     # Step 3: optional back-translation (for UI clarity)
     native_script = GoogleTranslator(
