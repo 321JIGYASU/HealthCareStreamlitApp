@@ -1,16 +1,73 @@
 import streamlit as st
 import wave
 import os
+import json
+import re
 
 
 from faster_whisper import WhisperModel
 from deep_translator import GoogleTranslator
+from openai import OpenAI
+from dotenv import load_dotenv
+
+SYMPTOMS = [
+    "fever", "cough", "cold", "headache",
+    "chest pain", "breathing difficulty",
+    "shortness of breath", "fatigue",
+    "dizziness", "vomiting", "nausea"
+]
+
+MEDICAL_HISTORY = [
+    "diabetes", "hypertension", "asthma",
+    "bp", "heart disease"
+]
+
+DURATION_PATTERNS = [
+    r"\b\d+\s*(day|days|week|weeks|month|months)\b",
+    r"since yesterday",
+    r"since morning",
+    r"for \d+ days"
+]
+
+
+def extract_symptoms(text):
+
+    text_lower = text.lower()
+
+    found_symp = [
+        s for s in SYMPTOMS
+        if s in text_lower
+    ]
+
+    found_hist = [
+        h for h in MEDICAL_HISTORY
+        if h in text_lower
+    ]
+
+    duration = None
+    for pattern in DURATION_PATTERNS:
+        match = re.search(pattern, text_lower)
+        if match:
+            duration = match.group()
+            break
+
+    main_complaint = found_symp[0] if found_symp else None
+
+    return {
+        "main_complaint": main_complaint,
+        "symptoms": list(set(found_symp)),
+        "duration": duration,
+        "medical_history": list(set(found_hist))
+    }
+        
+
 
 @st.cache_resource
 def load_model():
-    return WhisperModel("small", device="cpu", compute_type="int8")
-
+     return WhisperModel("small", device="cpu", compute_type="int8")
 model = load_model()
+     
+    
 
 def process_audio(audio_path):
 
@@ -31,6 +88,7 @@ def process_audio(audio_path):
     )
 
     english_text = " ".join([s.text for s in segments_en])
+    clinical_data_extract = extract_symptoms(english_text)
 
     # Step 3: optional back-translation (for UI clarity)
     native_script = GoogleTranslator(
@@ -38,7 +96,7 @@ def process_audio(audio_path):
         target=detected_lang
     ).translate(english_text)
 
-    return detected_lang, native_text, english_text, native_script
+    return detected_lang, native_text, english_text, native_script,clinical_data_extract
 
 
 st.title("Patient voice complaint")
@@ -66,7 +124,7 @@ if os.path.exists("patient_audio.wav"):
 
     #Transcribe button
     if st.button("Transcribe & Translate"):
-        lang, native_text, english_text, native_script = process_audio("patient_audio.wav")
+        lang, native_text, english_text, native_script,clinical_data_extract = process_audio("patient_audio.wav")
         st.subheader("Detected language")
         st.write(lang)
         st.subheader("Patient Speech (Original)")
@@ -74,7 +132,9 @@ if os.path.exists("patient_audio.wav"):
         st.subheader("English Translation")
         st.write(english_text)
         st.subheader("Back to Native (Cleaned Version)")
-        st.write(native_script) 
+        st.write(native_script)
+        st.subheader("Summary Extract")
+        st.write(clinical_data_extract)
     
        
     
