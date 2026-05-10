@@ -11,38 +11,48 @@ from openai import OpenAI
 from dotenv import load_dotenv
 
 SYMPTOMS = [
-    "fever", "cough", "cold", "headache",
-    "chest pain", "breathing difficulty",
-    "shortness of breath", "fatigue",
-    "dizziness", "vomiting", "nausea"
+    ["fever", "high temperature"],
+    ["cough"],
+    ["chest pain", "heart pain", "chest discomfort","pain in chest","pain in heart"],
+    ["breathing difficulty", "shortness of breath", "dyspnea"],
+    ["headache"],
+    ["fatigue", "tiredness"],
+    ["vomiting","nausea"]
 ]
 
 MEDICAL_HISTORY = [
-    "diabetes", "hypertension", "asthma",
-    "bp", "heart disease"
+    ["heart problem", "heart disease", "cardiac issue", "heart condition"],
+    ["diabetes", "high sugar"],
+    ["hypertension", "high bp", "blood pressure"],
+    ["asthma"]
 ]
 
 DURATION_PATTERNS = [
-    r"\b\d+\s*(day|days|week|weeks|month|months)\b",
-    r"since yesterday",
-    r"since morning",
-    r"for \d+ days"
+    r"\b\d+\s*(days|day|weeks|week|months|month|years|year)\b",
+    r"\bsince\s+\d+\s*(days|weeks|months|years)\b",
+    r"\bfor\s+\d+\s*(days|weeks|months|years)\b"
 ]
 
+
+def match_grps(text,grps):
+     """Match synonym groups instead of exact words"""
+     text = " ".join(text) if isinstance(text, list) else text
+     text = text.lower()
+     found = []
+     for grp in grps:
+         for term in grp:
+             if term in text:
+                 found.append(term)
+                 break
+     return found
 
 def extract_symptoms(text):
 
     text_lower = text.lower()
 
-    found_symp = [
-        s for s in SYMPTOMS
-        if s in text_lower
-    ]
+    found_symp = match_grps(text_lower,SYMPTOMS)
 
-    found_hist = [
-        h for h in MEDICAL_HISTORY
-        if h in text_lower
-    ]
+    found_hist = match_grps(text_lower,MEDICAL_HISTORY)
 
     duration = None
     for pattern in DURATION_PATTERNS:
