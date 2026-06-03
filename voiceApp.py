@@ -9,6 +9,7 @@ from faster_whisper import WhisperModel
 from deep_translator import GoogleTranslator
 from openai import OpenAI
 from dotenv import load_dotenv
+from rapidfuzz import fuzz
 
 SYMPTOMS = [
     ["fever", "high temperature"],
@@ -34,25 +35,35 @@ DURATION_PATTERNS = [
 ]
 
 
-def match_grps(text,grps):
+def match_grps(text,variants,threshold=80):
      """Match synonym groups instead of exact words"""
-     text = " ".join(text) if isinstance(text, list) else text
-     text = text.lower()
-     found = []
-     for grp in grps:
-         for term in grp:
-             if term in text:
-                 found.append(term)
-                 break
-     return found
+     for v in variants:
+          score = fuzz.partial_ratio(v.lower(),text)
+          if score>=threshold:
+               return True
+     return False
 
 def extract_symptoms(text):
 
     text_lower = text.lower()
 
-    found_symp = match_grps(text_lower,SYMPTOMS)
+    found_symp = []
 
-    found_hist = match_grps(text_lower,MEDICAL_HISTORY)
+    found_history = []
+
+    for group in SYMPTOMS:
+         canonical = group[0]
+
+         if match_grps(text,group):
+              found_symp.append(canonical)
+              
+    for group in MEDICAL_HISTORY:
+          canonical = group[0]
+
+          if match_grps(text,group):
+               found_history.append(canonical)
+               
+
 
     duration = None
     for pattern in DURATION_PATTERNS:
@@ -67,14 +78,14 @@ def extract_symptoms(text):
         "main_complaint": main_complaint,
         "symptoms": list(set(found_symp)),
         "duration": duration,
-        "medical_history": list(set(found_hist))
+        "medical_history": list(set(found_history))
     }
         
 
 
 @st.cache_resource
 def load_model():
-     return WhisperModel("small", device="cpu", compute_type="int8")
+     return WhisperModel("medium", device="cpu", compute_type="int8")
 model = load_model()
      
     
@@ -86,6 +97,8 @@ def process_audio(audio_path):
     detected_lang = info.language
 
     native_text = " ".join([s.text for s in segments])
+   
+    
 
     # Step 2: translate to English using Whisper
     segments_en, _ = model.transcribe(
@@ -106,7 +119,7 @@ def process_audio(audio_path):
         target=detected_lang
     ).translate(english_text)
 
-    return detected_lang, native_text, english_text, native_script,clinical_data_extract
+    return detected_lang, native_text, english_text, native_script, clinical_data_extract
 
 
 st.title("Patient voice complaint")
