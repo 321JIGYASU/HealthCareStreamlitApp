@@ -47,15 +47,16 @@ def extract_symptoms(text):
 
     text_lower = text.lower()
 
-    found_symp = []
+    found_symp = [g[0] for g in SYMPTOMS if match_grps(text, g)]
 
-    found_history = []
+    found_history = [g[0] for g in MEDICAL_HISTORY if match_grps(text,g)]
 
-    for group in SYMPTOMS:
-         canonical = group[0]
+    duration_match = next((re.search(p, text_lower) for p in DURATION_PATTERNS if re.search(p, text_lower)), None)
+    duration = duration_match.group() if duration_match else "unspecified duration"
 
-         if match_grps(text,group):
-              found_symp.append(canonical)
+    cc_hpi = f"Patient reports {', '.join(found_symp)} for {duration}." if found_symp else "No active symptoms reported."
+    pmh = f"Significant Medical history: {', '.join(found_history)}." if found_history else "No significant medical history reported."
+    return f"📋 CLINICAL NOTE\n\nCHIEF COMPLAINT & HISTORY OF PRESENT ILLNESS:\n{cc_hpi}\n\nPAST MEDICAL HISTORY:\n{pmh}"
               
     for group in MEDICAL_HISTORY:
           canonical = group[0]
